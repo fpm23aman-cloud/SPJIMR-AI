@@ -1,1 +1,213 @@
-# SPJIMR-AI
+# SPJIMR-AI[index (1).html](https://github.com/user-attachments/files/22621417/index.1.html)
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello, World!</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+      <h1 class="title">Hello World! </h1>
+      <p id="currentTime"></p>
+      <script src="script.js"></script>
+  </body>
+</html><!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SPJIMR AI — Experimental Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f9fafb; }
+    .chat-container {
+      max-width: 700px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      min-height: 90vh;
+    }
+    .header { 
+      background: #7636c9; 
+      color: white; 
+      padding: 14px; 
+      border-radius: 12px 12px 0 0; 
+      font-weight: bold; 
+      font-size: 1.2em;
+    }
+    .chat-box {
+      flex: 1;
+      height: 500px;
+      min-height: 250px;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+    .msg {
+      max-width: 75%;
+      padding: 10px 14px;
+      margin: 6px 0;
+      border-radius: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+      font-size: 1em;
+    }
+    .user { background: #e0f2fe; align-self: flex-end; border: 1px solid #bae6fd; }
+    .ai { background: #f3f4f6; align-self: flex-start; border: 1px solid #e5e7eb; }
+    .typing { font-style: italic; color: #6b7280; font-size: 14px; margin: 6px 0; }
+    .controls {
+      padding: 12px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      background: #fff;
+      border-radius: 0 0 12px 12px;
+    }
+    button {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      cursor: pointer;
+      font-size: 1em;
+      background: #f8fafc;
+      transition: background 0.2s;
+    }
+    button:active {
+      background: #e0e7ef;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    @media (max-width: 600px) {
+      .chat-container {
+        margin: 0;
+        border-radius: 0;
+        min-height: 100vh;
+        max-width: 100vw;
+        border: none;
+      }
+      .header { border-radius: 0; padding: 12px; font-size: 1em; }
+      .chat-box { padding: 10px; height: 60vh; min-height: 160px; }
+      .msg { font-size: 0.98em; padding: 8px 10px; }
+      .controls { padding: 8px; gap: 6px; border-radius: 0 0 0 0; }
+      button { padding: 8px 10px; font-size: 0.95em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="header">💬 SPJIMR AI — Shopping Assistant</div>
+    <div id="chat" class="chat-box"></div>
+    <div class="controls">
+      <button data-prompt="U1">U1: Needs & budget</button>
+      <button data-prompt="U2" disabled>U2: Fast charging?</button>
+      <button data-prompt="U3" disabled>U3: Mic & warranty?</button>
+      <button data-prompt="U4" disabled>U4: One-line comparison</button>
+    </div>
+  </div>
+  <script>
+    (function(){
+      const qs = new URLSearchParams(location.search);
+      const comp = (qs.get("comp") || "low").toLowerCase();  // “high” or “low”
+      const nudge = (qs.get("nudge") || (Math.random() < 0.5 ? "narrow" : "broad")).toLowerCase();
+      const pid = qs.get("pid") || null;
+
+      const chat = document.getElementById("chat");
+
+      // Log data structure
+      const log = {
+        meta: {
+          participantId: pid,
+          competency: comp,
+          nudgeType: nudge,
+          assignedAt: new Date().toISOString(),
+          device: navigator.userAgent
+        },
+        transcript: [],  // {timestamp, who, text, step}
+        clicks: []       // {timestamp, promptKey}
+      };
+
+      // User prompt templates
+      const U = {
+        U1: "I need over-ear noise-cancelling headphones under ₹10k. I commute daily; battery life matters.",
+        U2: "I prefer fast charging. Any options?",
+        U3: "How’s the mic for calls? And the warranty?",
+        U4: "Give me a one-line comparison of your top two."
+      };
+
+      // AI responses — narrow vs broad
+      const A_narrow = {
+        U1: "Two fits under ₹10k: Sony WH-CH720N (₹9,990; ~35h; strong ANC) and Boat Nirvana 751 ANC (₹6,999; ~65h). Sony is better for noisy commutes; Boat lasts longer.",
+        U2: "Fast charging: Sony ~3 min → ~1h play; Boat ~10 min → ~10h. Both via USB-C.",
+        U3: "Sony’s beamforming mics are clearer in traffic; Boat works fine indoors. Both have 1-yr warranties; Sony has wider service centers.",
+        U4: "Sony = stronger ANC & mics; Boat = longer battery & lower price."
+      };
+      const A_broad = {
+        U1: "There are many headphone options from Sony, Boat, JBL, and others. They often include noise cancelling and decent battery life.",
+        U2: "Fast charging is common across many models, but exact specs vary.",
+        U3: "Mics are usually okay; warranties depend on brand or seller.",
+        U4: "Either could be a good choice depending on your priorities."
+      };
+
+      function getReply(stepKey) {
+        return nudge === "narrow" ? A_narrow[stepKey] : A_broad[stepKey];
+      }
+
+      function addMsg(who, text, stepKey) {
+        const div = document.createElement("div");
+        div.className = "msg " + (who === "user" ? "user" : "ai");
+        div.textContent = text;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+        log.transcript.push({
+          timestamp: new Date().toISOString(),
+          who, text, step: stepKey
+        });
+      }
+
+      function addTypingIndicator() {
+        const div = document.createElement("div");
+        div.className = "typing";
+        div.textContent = "SPJIMR AI is typing…";
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+        return div;
+      }
+
+      document.querySelector(".controls").addEventListener("click", (e) => {
+        const key = e.target.getAttribute("data-prompt");
+        if (!key) return;
+        e.target.disabled = true;
+        log.clicks.push({ timestamp: new Date().toISOString(), prompt: key });
+        addMsg("user", U[key], key);
+        const typingDiv = addTypingIndicator();
+        // Delay (same base, small jitter)
+        const delay = 1000 + Math.random() * 800;
+        setTimeout(() => {
+          typingDiv.remove();
+          addMsg("ai", getReply(key), key);
+          const order = ["U1", "U2", "U3", "U4"];
+          const idx = order.indexOf(key);
+          if (idx >= 0 && idx < order.length - 1) {
+            document.querySelector(`button[data-prompt=${order[idx+1]}]`).disabled = false;
+          }
+        }, delay);
+      });
+
+      // Greeting when loaded
+      setTimeout(() => {
+        addMsg("ai", "Hello, I’m SPJIMR AI. Tell me your needs & budget to start.", "GREETING");
+      }, 500);
+
+      // At end of chat, how to end and retrieve log — embed link or “Finish” button in survey or next page.
+      window.getChatLog = () => {
+        // Return JSON object of `log`
+        return log;
+      };
+    })();
+  </script>
+</body>
+</html>
